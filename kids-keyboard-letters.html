@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>小朋友字母键盘</title>
+  <style>
+    :root {
+      --ink: #223047;
+      --muted: #617086;
+      --paper: #fffefa;
+      --panel: rgba(255, 255, 255, .88);
+      --line: #d8e2ec;
+      --sun: #ffd86b;
+      --mint: #7bdc9f;
+      --sky: #8fd3ff;
+      --berry: #ff7fa3;
+      --violet: #b9a7ff;
+      --good: #16a34a;
+      --bad: #e5485f;
+      font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Comic Sans MS", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 12%, rgba(255, 216, 107, .5) 0 120px, transparent 121px),
+        radial-gradient(circle at 88% 17%, rgba(143, 211, 255, .44) 0 142px, transparent 143px),
+        linear-gradient(135deg, #fff6db 0%, #effff7 45%, #fff1f6 100%);
+    }
+
+    .page {
+      width: min(100%, 1120px);
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .tagline {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.04rem;
+      font-weight: 850;
+    }
+
+    .mascot {
+      flex: 0 0 auto;
+      width: 112px;
+      height: 100px;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(330px, 1fr) 320px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .play,
+    .side,
+    .keyboard-panel {
+      border: 2px solid rgba(34, 48, 71, .12);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 14px 32px rgba(34, 48, 71, .13);
+    }
+
+    .play {
+      padding: clamp(14px, 3vw, 24px);
+    }
+
+    .letter-stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: clamp(300px, 48vw, 520px);
+      border-radius: 8px;
+      border: 5px solid #2b3a55;
+      overflow: hidden;
+      background:
+        linear-gradient(90deg, rgba(34, 48, 71, .08) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(34, 48, 71, .08) 1px, transparent 1px),
+        #eaf8ff;
+      background-size: 42px 42px;
+    }
+
+    .letter-card {
+      display: grid;
+      place-items: center;
+      width: min(78%, 400px);
+      aspect-ratio: 1;
+      border-radius: 8px;
+      border: 6px solid #ffffff;
+      background: linear-gradient(145deg, #ffffff, #fff7d6);
+      box-shadow: 0 18px 40px rgba(34, 48, 71, .18);
+    }
+
+    .target-letter {
+      font-size: clamp(8rem, 25vw, 16rem);
+      line-height: .9;
+      font-weight: 950;
+      letter-spacing: 0;
+      color: #23405f;
+      text-shadow: 0 8px 0 rgba(255, 216, 107, .75);
+    }
+
+    .bubble {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 4px solid var(--mint);
+      color: var(--good);
+      font-size: 2.1rem;
+      font-weight: 950;
+      opacity: 0;
+      transform: translateY(20px) scale(.8);
+      pointer-events: none;
+    }
+
+    .bubble.show {
+      animation: pop .78s ease forwards;
+    }
+
+    @keyframes pop {
+      0% { opacity: 0; transform: translateY(24px) scale(.75); }
+      20% { opacity: 1; transform: translateY(0) scale(1.04); }
+      100% { opacity: 0; transform: translateY(-70px) scale(.92); }
+    }
+
+    .side {
+      padding: 15px;
+    }
+
+    .score-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .score-box {
+      min-height: 76px;
+      padding: 12px;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .score-box span {
+      display: block;
+      color: var(--muted);
+      font-size: .9rem;
+      font-weight: 850;
+    }
+
+    .score-box strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .stars {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 2px solid rgba(255, 216, 107, .9);
+      border-radius: 8px;
+      background: #fff9e6;
+      font-weight: 950;
+      margin-bottom: 12px;
+    }
+
+    .star-row {
+      display: flex;
+      gap: 5px;
+    }
+
+    .star {
+      width: 23px;
+      height: 23px;
+      color: #f4b400;
+    }
+
+    .modes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .mode,
+    .tool {
+      min-height: 54px;
+      border: 0;
+      border-radius: 8px;
+      color: var(--ink);
+      font-size: 1rem;
+      font-weight: 950;
+      cursor: pointer;
+      background: #f4f7fb;
+      box-shadow: inset 0 -4px 0 rgba(34, 48, 71, .14);
+      transition: transform .12s ease, filter .12s ease;
+    }
+
+    .mode.active {
+      background: var(--sun);
+    }
+
+    .tool.primary {
+      background: #d9f99d;
+    }
+
+    .mode:hover,
+    .tool:hover,
+    .key:hover {
+      filter: brightness(1.03);
+      transform: translateY(-1px);
+    }
+
+    .mode:active,
+    .tool:active,
+    .key:active {
+      transform: translateY(2px);
+      box-shadow: inset 0 -2px 0 rgba(34, 48, 71, .14);
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .tool {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 10px;
+    }
+
+    .tool svg {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+    }
+
+    .status {
+      min-height: 68px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid #ffd1dc;
+      background: #fff5f8;
+      color: var(--muted);
+      font-weight: 850;
+      line-height: 1.35;
+    }
+
+    .finger-card {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid #c6ddff;
+      background: #f1f8ff;
+    }
+
+    .finger-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-weight: 950;
+    }
+
+    .finger-title strong {
+      color: #0f5f9c;
+      font-size: 1.08rem;
+    }
+
+    .hands {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .hand {
+      display: grid;
+      gap: 6px;
+    }
+
+    .hand-label {
+      color: var(--muted);
+      font-size: .86rem;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .finger-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+    }
+
+    .finger {
+      display: grid;
+      place-items: center;
+      min-height: 42px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 2px solid #dbeafe;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 950;
+      line-height: 1.05;
+      text-align: center;
+    }
+
+    .finger.active {
+      background: var(--sun);
+      border-color: #f4b400;
+      color: var(--ink);
+      box-shadow: 0 0 0 4px rgba(255, 216, 107, .28);
+    }
+
+    .finger.resting {
+      background: #f8fafc;
+      border-style: dashed;
+    }
+
+    .keyboard-panel {
+      grid-column: 1 / -1;
+      padding: 14px;
+    }
+
+    .keyboard {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+    }
+
+    .key-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .key {
+      display: grid;
+      place-items: center;
+      width: min(8.4vw, 62px);
+      min-width: 36px;
+      height: clamp(42px, 7vw, 58px);
+      border: 0;
+      border-radius: 8px;
+      background: #ffffff;
+      color: var(--ink);
+      font-size: clamp(1.05rem, 2.5vw, 1.55rem);
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow: inset 0 -4px 0 rgba(34, 48, 71, .14);
+    }
+
+    .key.target {
+      background: var(--sun);
+      box-shadow: 0 0 0 5px rgba(255, 216, 107, .32), inset 0 -4px 0 rgba(34, 48, 71, .14);
+      transform: translateY(-2px);
+    }
+
+    .key.good {
+      background: var(--mint);
+    }
+
+    .key.bad {
+      background: #ffdbe3;
+      color: var(--bad);
+      animation: shake .2s ease-in-out 2;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      35% { transform: translateX(-4px); }
+      70% { transform: translateX(4px); }
+    }
+
+    @media (max-width: 860px) {
+      header {
+        align-items: center;
+      }
+
+      .mascot {
+        width: 86px;
+        height: 78px;
+      }
+
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .page {
+        padding: 12px;
+      }
+
+      .tagline {
+        font-size: .95rem;
+      }
+
+      .letter-stage {
+        min-height: 330px;
+      }
+
+      .key-row {
+        gap: 4px;
+      }
+
+      .key {
+        width: 7.3vw;
+        min-width: 26px;
+        height: 42px;
+        border-radius: 7px;
+      }
+
+      .keyboard-panel {
+        padding: 10px 4px;
+        overflow: hidden;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div>
+        <h1>字母键盘小冒险</h1>
+        <p class="tagline">看见大字母，就在键盘上找到它。</p>
+      </div>
+      <svg class="mascot" viewBox="0 0 128 112" aria-hidden="true">
+        <rect x="14" y="34" width="100" height="58" rx="8" fill="#ffffff" stroke="#223047" stroke-width="5"/>
+        <path d="M32 50h12M52 50h12M72 50h12M92 50h8M32 66h12M52 66h12M72 66h12M92 66h8" stroke="#8fd3ff" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="45" cy="22" r="14" fill="#ffd86b" stroke="#223047" stroke-width="5"/>
+        <circle cx="83" cy="22" r="14" fill="#7bdc9f" stroke="#223047" stroke-width="5"/>
+        <path d="M55 22h18" stroke="#223047" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+    </header>
+
+    <main>
+      <section class="play" aria-label="字母练习区">
+        <div class="letter-stage">
+          <div class="letter-card">
+            <div class="target-letter" id="targetLetter">A</div>
+          </div>
+          <div class="bubble" id="bubble">+1</div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="score-row">
+          <div class="score-box">
+            <span>星星</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="score-box">
+            <span>连对</span>
+            <strong id="streak">0</strong>
+          </div>
+        </div>
+
+        <div class="stars">
+          <span>小奖章</span>
+          <div class="star-row" id="stars"></div>
+        </div>
+
+        <div class="modes">
+          <button class="mode active" data-mode="upper">大写</button>
+          <button class="mode" data-mode="lower">小写</button>
+        </div>
+
+        <div class="tools">
+          <button class="tool primary" id="nextBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 5v14l10-7L5 5Zm11 0h3v14h-3V5Z" fill="currentColor"/>
+            </svg>
+            下一个
+          </button>
+          <button class="tool" id="resetBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v6h6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            重来
+          </button>
+        </div>
+
+        <div class="status" id="status" aria-live="polite">先找字母 A。</div>
+
+        <div class="finger-card" aria-label="手指提示">
+          <div class="finger-title">
+            <span>手指提示</span>
+            <strong id="fingerName">左手小指</strong>
+          </div>
+          <div class="hands">
+            <div class="hand">
+              <div class="hand-label">左手</div>
+              <div class="finger-row">
+                <div class="finger" data-finger="left-pinky">小指</div>
+                <div class="finger" data-finger="left-ring">无名</div>
+                <div class="finger" data-finger="left-middle">中指</div>
+                <div class="finger" data-finger="left-index">食指</div>
+                <div class="finger resting" data-finger="left-thumb">拇指</div>
+              </div>
+            </div>
+            <div class="hand">
+              <div class="hand-label">右手</div>
+              <div class="finger-row">
+                <div class="finger resting" data-finger="right-thumb">拇指</div>
+                <div class="finger" data-finger="right-index">食指</div>
+                <div class="finger" data-finger="right-middle">中指</div>
+                <div class="finger" data-finger="right-ring">无名</div>
+                <div class="finger" data-finger="right-pinky">小指</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="keyboard-panel" aria-label="屏幕键盘">
+        <div class="keyboard" id="keyboard"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    const targetLetter = document.getElementById("targetLetter");
+    const keyboard = document.getElementById("keyboard");
+    const scoreEl = document.getElementById("score");
+    const streakEl = document.getElementById("streak");
+    const statusEl = document.getElementById("status");
+    const fingerNameEl = document.getElementById("fingerName");
+    const starsEl = document.getElementById("stars");
+    const bubble = document.getElementById("bubble");
+    const modeButtons = [...document.querySelectorAll(".mode")];
+
+    const fingerInfo = {
+      "left-pinky": { name: "左手小指", keys: "QAZ" },
+      "left-ring": { name: "左手无名指", keys: "WSX" },
+      "left-middle": { name: "左手中指", keys: "EDC" },
+      "left-index": { name: "左手食指", keys: "RFVTGB" },
+      "right-index": { name: "右手食指", keys: "YUHJNM" },
+      "right-middle": { name: "右手中指", keys: "IK" },
+      "right-ring": { name: "右手无名指", keys: "OL" },
+      "right-pinky": { name: "右手小指", keys: "P" }
+    };
+
+    const fingerOrder = [
+      "left-pinky",
+      "left-ring",
+      "left-middle",
+      "left-index",
+      "right-index",
+      "right-middle",
+      "right-ring",
+      "right-pinky"
+    ];
+
+    const keyToFinger = Object.fromEntries(
+      Object.entries(fingerInfo).flatMap(([finger, info]) =>
+        info.keys.split("").map(letter => [letter, finger])
+      )
+    );
+
+    let mode = "upper";
+    let current = "A";
+    let last = "";
+    let score = 0;
+    let streak = 0;
+    let badgeCount = 0;
+    let acceptingAnswer = true;
+    let fingerStep = 0;
+    let recentCorrectLetter = "";
+    let sameLetterCooldownUntil = 0;
+
+    function buildKeyboard() {
+      keyboard.innerHTML = "";
+      rows.forEach(row => {
+        const rowEl = document.createElement("div");
+        rowEl.className = "key-row";
+        row.split("").forEach(letter => {
+          const key = document.createElement("button");
+          key.type = "button";
+          key.className = "key";
+          key.dataset.letter = letter;
+          key.textContent = mode === "upper" ? letter : letter.toLowerCase();
+          key.setAttribute("aria-label", letter);
+          key.addEventListener("click", () => checkLetter(letter));
+          rowEl.appendChild(key);
+        });
+        keyboard.appendChild(rowEl);
+      });
+      highlightTarget();
+    }
+
+    function pickLetter() {
+      acceptingAnswer = true;
+      const activeFingers = fingerOrder;
+      const finger = activeFingers[fingerStep % activeFingers.length];
+      fingerStep += 1;
+      const pool = fingerInfo[finger].keys.split("");
+      let next = pool[Math.floor(Math.random() * pool.length)];
+      if (pool.length > 1) {
+        while (next === current) {
+          next = pool[Math.floor(Math.random() * pool.length)];
+        }
+      }
+      last = current;
+      current = next;
+      updateTarget();
+    }
+
+    function updateTarget() {
+      targetLetter.textContent = mode === "upper" ? current : current.toLowerCase();
+      targetLetter.style.color = colorFor(current);
+      statusEl.textContent = "找字母 " + targetLetter.textContent + "，用" + fingerInfo[keyToFinger[current]].name + "。";
+      highlightTarget();
+      updateFingerHint();
+    }
+
+    function highlightTarget(extraClass = "") {
+      document.querySelectorAll(".key").forEach(key => {
+        key.classList.toggle("target", key.dataset.letter === current);
+        key.classList.remove("good", "bad");
+        if (extraClass && key.dataset.letter === current) {
+          key.classList.add(extraClass);
+        }
+      });
+    }
+
+    function checkLetter(raw) {
+      const letter = raw.toUpperCase();
+      if (!letters.includes(letter)) return;
+      if (!acceptingAnswer) return;
+      if (letter === recentCorrectLetter && letter !== current) return;
+      if (letter === recentCorrectLetter && Date.now() < sameLetterCooldownUntil) return;
+
+      if (letter === current) {
+        acceptingAnswer = false;
+        recentCorrectLetter = letter;
+        sameLetterCooldownUntil = Date.now() + 900;
+        score += 1;
+        streak += 1;
+        if (streak % 5 === 0) {
+          badgeCount = Math.min(5, badgeCount + 1);
+        }
+        scoreEl.textContent = score;
+        streakEl.textContent = streak;
+        renderStars();
+        showBubble("+1", true);
+        statusEl.textContent = encouragement();
+        highlightTarget("good");
+        setTimeout(pickLetter, 520);
+      } else {
+        streak = 0;
+        streakEl.textContent = streak;
+        statusEl.textContent = "差一点，用" + fingerInfo[keyToFinger[current]].name + "找 " + targetLetter.textContent + "。";
+        flashWrong(letter);
+        showBubble("再试", false);
+      }
+    }
+
+    function updateFingerHint() {
+      const activeFinger = keyToFinger[current];
+      fingerNameEl.textContent = fingerInfo[activeFinger].name;
+      document.querySelectorAll(".finger").forEach(finger => {
+        finger.classList.toggle("active", finger.dataset.finger === activeFinger);
+      });
+    }
+
+    function flashWrong(letter) {
+      const key = document.querySelector('.key[data-letter="' + letter + '"]');
+      if (!key) return;
+      key.classList.remove("bad");
+      void key.offsetWidth;
+      key.classList.add("bad");
+      setTimeout(() => key.classList.remove("bad"), 520);
+    }
+
+    function showBubble(text, good) {
+      bubble.textContent = text;
+      bubble.style.color = good ? "var(--good)" : "var(--bad)";
+      bubble.style.borderColor = good ? "var(--mint)" : "#ffd1dc";
+      bubble.classList.remove("show");
+      void bubble.offsetWidth;
+      bubble.classList.add("show");
+    }
+
+    function renderStars() {
+      starsEl.innerHTML = "";
+      for (let i = 0; i < 5; i += 1) {
+        const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        star.setAttribute("class", "star");
+        star.setAttribute("viewBox", "0 0 24 24");
+        star.setAttribute("aria-hidden", "true");
+        star.innerHTML = '<path d="M12 3 14.7 8.7 21 9.5l-4.6 4.4 1.1 6.1L12 17l-5.5 3 1.1-6.1L3 9.5l6.3-.8L12 3Z" fill="currentColor"/>';
+        star.style.opacity = i < badgeCount ? "1" : ".22";
+        starsEl.appendChild(star);
+      }
+    }
+
+    function setMode(nextMode) {
+      mode = nextMode;
+      modeButtons.forEach(button => {
+        button.classList.toggle("active", button.dataset.mode === mode);
+      });
+      buildKeyboard();
+      updateTarget();
+    }
+
+    function resetGame() {
+      score = 0;
+      streak = 0;
+      badgeCount = 0;
+      current = "A";
+      last = "";
+      acceptingAnswer = true;
+      fingerStep = 0;
+      recentCorrectLetter = "";
+      sameLetterCooldownUntil = 0;
+      scoreEl.textContent = score;
+      streakEl.textContent = streak;
+      renderStars();
+      updateTarget();
+    }
+
+    function encouragement() {
+      const lines = ["找到了。", "好眼力。", "这个键按对啦。", "继续收集星星。", "真不错。"];
+      return lines[score % lines.length];
+    }
+
+    function colorFor(letter) {
+      const colors = ["#23405f", "#b42355", "#1f7a4d", "#805ad5", "#c2410c", "#0f766e"];
+      return colors[letter.charCodeAt(0) % colors.length];
+    }
+
+    document.addEventListener("keydown", event => {
+      if (event.repeat) return;
+      if (event.key.length === 1 && /[a-z]/i.test(event.key)) {
+        checkLetter(event.key);
+      }
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        pickLetter();
+      }
+    });
+
+    modeButtons.forEach(button => {
+      button.addEventListener("click", () => setMode(button.dataset.mode));
+    });
+    document.getElementById("nextBtn").addEventListener("click", pickLetter);
+    document.getElementById("resetBtn").addEventListener("click", resetGame);
+
+    buildKeyboard();
+    renderStars();
+    updateTarget();
+  </script>
+</body>
+</html>

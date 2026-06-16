@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>小朋友贪吃蛇</title>
+  <style>
+    :root {
+      --ink: #223047;
+      --muted: #5f6d7f;
+      --leaf: #43b66b;
+      --leaf-dark: #227a46;
+      --apple: #ff5c7a;
+      --sun: #ffd66b;
+      --sky: #89cff0;
+      --paper: #fffefa;
+      --line: #d8e2ec;
+      --panel: rgba(255, 255, 255, .86);
+      font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Comic Sans MS", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 16%, rgba(255, 214, 107, .52) 0 120px, transparent 121px),
+        radial-gradient(circle at 84% 13%, rgba(137, 207, 240, .42) 0 145px, transparent 146px),
+        linear-gradient(135deg, #fff7dc 0%, #effff5 46%, #fff1f5 100%);
+    }
+
+    .page {
+      width: min(100%, 1050px);
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .tagline {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.04rem;
+      font-weight: 850;
+    }
+
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 50px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: var(--panel);
+      border: 2px solid rgba(34, 48, 71, .1);
+      font-weight: 950;
+      box-shadow: 0 10px 24px rgba(34, 48, 71, .12);
+    }
+
+    .badge svg {
+      width: 32px;
+      height: 32px;
+      flex: 0 0 auto;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(310px, 1fr) 310px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .stage,
+    .side {
+      border: 2px solid rgba(34, 48, 71, .12);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 14px 32px rgba(34, 48, 71, .13);
+    }
+
+    .stage {
+      padding: clamp(12px, 3vw, 22px);
+    }
+
+    .canvas-shell {
+      position: relative;
+      width: min(100%, 620px);
+      margin: 0 auto;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      border: 5px solid #2b3a55;
+      overflow: hidden;
+      background: #e9fbe9;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      text-align: center;
+      background: rgba(255, 254, 250, .75);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .16s ease;
+    }
+
+    .overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .overlay-box {
+      width: min(100%, 360px);
+      padding: 18px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 3px solid var(--sun);
+      box-shadow: 0 16px 40px rgba(34, 48, 71, .18);
+    }
+
+    .overlay h2 {
+      margin: 6px 0 4px;
+      font-size: 1.8rem;
+      letter-spacing: 0;
+    }
+
+    .overlay p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-weight: 850;
+    }
+
+    .side {
+      padding: 15px;
+    }
+
+    .score-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .score-box {
+      min-height: 76px;
+      padding: 12px;
+      border: 2px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .score-box span {
+      display: block;
+      color: var(--muted);
+      font-size: .9rem;
+      font-weight: 850;
+    }
+
+    .score-box strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .hearts {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 58px;
+      padding: 10px 12px;
+      border: 2px solid #ffd1dc;
+      border-radius: 8px;
+      background: #fff5f8;
+      font-weight: 950;
+      margin-bottom: 12px;
+    }
+
+    .heart-row {
+      display: flex;
+      gap: 5px;
+    }
+
+    .heart {
+      width: 23px;
+      height: 23px;
+      color: var(--apple);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 70px);
+      grid-template-rows: repeat(3, 62px);
+      justify-content: center;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .dir,
+    .tool {
+      border: 0;
+      border-radius: 8px;
+      color: var(--ink);
+      font-weight: 950;
+      cursor: pointer;
+      background: #ffffff;
+      box-shadow: inset 0 -4px 0 rgba(34, 48, 71, .14);
+      transition: transform .12s ease, filter .12s ease;
+    }
+
+    .dir {
+      display: grid;
+      place-items: center;
+      border: 2px solid #c6ddff;
+      background: #e9f4ff;
+    }
+
+    .dir[data-dir="up"] { grid-column: 2; grid-row: 1; }
+    .dir[data-dir="left"] { grid-column: 1; grid-row: 2; }
+    .dir[data-dir="right"] { grid-column: 3; grid-row: 2; }
+    .dir[data-dir="down"] { grid-column: 2; grid-row: 3; }
+
+    .dir svg {
+      width: 34px;
+      height: 34px;
+    }
+
+    .dir:hover,
+    .tool:hover {
+      filter: brightness(1.03);
+      transform: translateY(-1px);
+    }
+
+    .dir:active,
+    .tool:active {
+      transform: translateY(2px);
+      box-shadow: inset 0 -2px 0 rgba(34, 48, 71, .14);
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tool {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 56px;
+      padding: 0 10px;
+      background: #f4f7fb;
+      font-size: 1rem;
+    }
+
+    .tool.primary {
+      grid-column: span 2;
+      background: #d9f99d;
+    }
+
+    .tool svg {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+    }
+
+    .status {
+      min-height: 58px;
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid rgba(255, 214, 107, .9);
+      background: #fff9e8;
+      color: var(--muted);
+      font-weight: 850;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 840px) {
+      header {
+        align-items: center;
+      }
+
+      .badge {
+        display: none;
+      }
+
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 450px) {
+      .page {
+        padding: 12px;
+      }
+
+      .tagline {
+        font-size: .95rem;
+      }
+
+      .controls {
+        grid-template-columns: repeat(3, 64px);
+        grid-template-rows: repeat(3, 56px);
+      }
+
+      .tool {
+        font-size: .92rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div>
+        <h1>小朋友贪吃蛇</h1>
+        <p class="tagline">慢慢吃苹果，长长身体，撞到也能再试一次。</p>
+      </div>
+      <div class="badge" aria-hidden="true">
+        <svg viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="29" fill="#d9f99d"/>
+          <path d="M15 38c8-20 32-22 36-7 3 11-8 20-21 16" fill="none" stroke="#227a46" stroke-width="7" stroke-linecap="round"/>
+          <circle cx="45" cy="25" r="3.5" fill="#223047"/>
+          <path d="M50 30h7" stroke="#ff5c7a" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        温柔模式
+      </div>
+    </header>
+
+    <main>
+      <section class="stage" aria-label="贪吃蛇游戏区">
+        <div class="canvas-shell">
+          <canvas id="game" width="560" height="560" aria-label="贪吃蛇棋盘"></canvas>
+          <div class="overlay show" id="overlay">
+            <div class="overlay-box">
+              <svg viewBox="0 0 96 96" width="84" height="84" aria-hidden="true">
+                <circle cx="48" cy="48" r="42" fill="#ffd66b"/>
+                <path d="M25 58c10-25 40-27 46-9 4 14-10 25-27 21" fill="none" stroke="#227a46" stroke-width="9" stroke-linecap="round"/>
+                <circle cx="64" cy="39" r="4" fill="#223047"/>
+                <path d="M70 45h10" stroke="#ff5c7a" stroke-width="4" stroke-linecap="round"/>
+              </svg>
+              <h2 id="overlayTitle">准备好啦</h2>
+              <p id="overlayText">点开始，让小蛇去吃苹果。</p>
+              <button class="tool primary" id="overlayStart">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 5v14l11-7-11-7Z" fill="currentColor"/>
+                </svg>
+                开始
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="score-row">
+          <div class="score-box">
+            <span>苹果</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="score-box">
+            <span>最好</span>
+            <strong id="best">0</strong>
+          </div>
+        </div>
+
+        <div class="hearts">
+          <span>爱心</span>
+          <div class="heart-row" id="hearts"></div>
+        </div>
+
+        <div class="controls" aria-label="方向按钮">
+          <button class="dir" data-dir="up" aria-label="向上">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 5 5 12h5v7h4v-7h5L12 5Z" fill="currentColor"/>
+            </svg>
+          </button>
+          <button class="dir" data-dir="left" aria-label="向左">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 12 12 5v5h7v4h-7v5L5 12Z" fill="currentColor"/>
+            </svg>
+          </button>
+          <button class="dir" data-dir="right" aria-label="向右">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m19 12-7-7v5H5v4h7v5l7-7Z" fill="currentColor"/>
+            </svg>
+          </button>
+          <button class="dir" data-dir="down" aria-label="向下">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m12 19 7-7h-5V5h-4v7H5l7 7Z" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="tools">
+          <button class="tool" id="pauseBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 5h4v14H7V5Zm6 0h4v14h-4V5Z" fill="currentColor"/>
+            </svg>
+            暂停
+          </button>
+          <button class="tool" id="resetBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v6h6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            重来
+          </button>
+          <button class="tool primary" id="startBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5v14l11-7-11-7Z" fill="currentColor"/>
+            </svg>
+            开始
+          </button>
+        </div>
+
+        <div class="status" id="status" aria-live="polite">按开始，或者点方向按钮。</div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+    const bestEl = document.getElementById("best");
+    const heartsEl = document.getElementById("hearts");
+    const statusEl = document.getElementById("status");
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlayTitle");
+    const overlayText = document.getElementById("overlayText");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const startBtn = document.getElementById("startBtn");
+
+    const cells = 14;
+    const tile = canvas.width / cells;
+    const startSnake = [{ x: 5, y: 7 }, { x: 4, y: 7 }, { x: 3, y: 7 }];
+    const dirs = {
+      up: { x: 0, y: -1 },
+      down: { x: 0, y: 1 },
+      left: { x: -1, y: 0 },
+      right: { x: 1, y: 0 }
+    };
+
+    let snake;
+    let apple;
+    let dir;
+    let nextDir;
+    let score;
+    let best = Number(localStorage.getItem("kidsSnakeBest") || 0);
+    let hearts;
+    let running = false;
+    let paused = false;
+    let lastTick = 0;
+    let stepMs = 430;
+    let sparkle = 0;
+
+    function resetState() {
+      snake = startSnake.map(part => ({ ...part }));
+      dir = { ...dirs.right };
+      nextDir = { ...dirs.right };
+      score = 0;
+      hearts = 3;
+      stepMs = 430;
+      apple = makeApple();
+      running = false;
+      paused = false;
+      lastTick = 0;
+      sparkle = 0;
+      updateUi();
+      showOverlay("准备好啦", "点开始，让小蛇去吃苹果。");
+      draw();
+    }
+
+    function startGame() {
+      running = true;
+      paused = false;
+      hideOverlay();
+      setStatus("小蛇出发啦。");
+      startBtn.innerHTML = startIcon("继续");
+      pauseBtn.innerHTML = pauseIcon("暂停");
+      requestAnimationFrame(loop);
+    }
+
+    function togglePause() {
+      if (!running) return;
+      paused = !paused;
+      if (paused) {
+        showOverlay("休息一下", "点继续，小蛇再出发。");
+        pauseBtn.innerHTML = playIcon("继续");
+        setStatus("已暂停。");
+      } else {
+        hideOverlay();
+        pauseBtn.innerHTML = pauseIcon("暂停");
+        setStatus("继续吃苹果。");
+        requestAnimationFrame(loop);
+      }
+    }
+
+    function loop(time) {
+      if (!running || paused) return;
+      if (!lastTick) lastTick = time;
+      if (time - lastTick >= stepMs) {
+        tick();
+        lastTick = time;
+      }
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function tick() {
+      dir = nextDir;
+      const head = snake[0];
+      const newHead = {
+        x: wrap(head.x + dir.x),
+        y: wrap(head.y + dir.y)
+      };
+
+      if (snake.some(part => part.x === newHead.x && part.y === newHead.y)) {
+        bump();
+        return;
+      }
+
+      snake.unshift(newHead);
+      if (newHead.x === apple.x && newHead.y === apple.y) {
+        score += 1;
+        sparkle = 8;
+        if (score > best) {
+          best = score;
+          localStorage.setItem("kidsSnakeBest", String(best));
+        }
+        if (score % 4 === 0 && stepMs > 270) {
+          stepMs -= 25;
+        }
+        apple = makeApple();
+        setStatus(encouragement());
+      } else {
+        snake.pop();
+      }
+      updateUi();
+    }
+
+    function bump() {
+      hearts -= 1;
+      updateUi();
+      if (hearts <= 0) {
+        running = false;
+        paused = true;
+        showOverlay("休息一下", "已经吃到 " + score + " 个苹果。");
+        setStatus("点重来，再玩一局。");
+        return;
+      }
+      snake = startSnake.map(part => ({ ...part }));
+      dir = { ...dirs.right };
+      nextDir = { ...dirs.right };
+      apple = makeApple();
+      sparkle = 0;
+      setStatus("碰到自己啦，没关系，再试一次。");
+    }
+
+    function wrap(value) {
+      if (value < 0) return cells - 1;
+      if (value >= cells) return 0;
+      return value;
+    }
+
+    function makeApple() {
+      let spot;
+      do {
+        spot = {
+          x: Math.floor(Math.random() * cells),
+          y: Math.floor(Math.random() * cells)
+        };
+      } while (snake.some(part => part.x === spot.x && part.y === spot.y));
+      return spot;
+    }
+
+    function setDirection(name) {
+      const chosen = dirs[name];
+      if (!chosen) return;
+      if (chosen.x + dir.x === 0 && chosen.y + dir.y === 0) return;
+      nextDir = { ...chosen };
+      if (!running) startGame();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawField();
+      drawApple();
+      drawSnake();
+      if (sparkle > 0) sparkle -= 1;
+    }
+
+    function drawField() {
+      for (let y = 0; y < cells; y += 1) {
+        for (let x = 0; x < cells; x += 1) {
+          ctx.fillStyle = (x + y) % 2 === 0 ? "#ecfbe9" : "#def5dc";
+          roundedRect(x * tile, y * tile, tile, tile, 0);
+          ctx.fill();
+        }
+      }
+
+      ctx.strokeStyle = "rgba(34, 48, 71, .08)";
+      ctx.lineWidth = 1;
+      for (let i = 1; i < cells; i += 1) {
+        ctx.beginPath();
+        ctx.moveTo(i * tile, 0);
+        ctx.lineTo(i * tile, canvas.height);
+        ctx.moveTo(0, i * tile);
+        ctx.lineTo(canvas.width, i * tile);
+        ctx.stroke();
+      }
+    }
+
+    function drawApple() {
+      const cx = apple.x * tile + tile / 2;
+      const cy = apple.y * tile + tile / 2;
+      const pulse = sparkle > 0 ? 1.12 : 1;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(pulse, pulse);
+      ctx.fillStyle = "#ff5c7a";
+      ctx.beginPath();
+      ctx.arc(-5, 2, tile * .25, 0, Math.PI * 2);
+      ctx.arc(7, 2, tile * .25, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(-15, 2, 30, 15);
+      ctx.fillStyle = "#2e8b57";
+      ctx.beginPath();
+      ctx.ellipse(8, -16, 10, 5, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#8b5a2b";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, -10);
+      ctx.lineTo(3, -22);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawSnake() {
+      snake.forEach((part, index) => {
+        const x = part.x * tile;
+        const y = part.y * tile;
+        const pad = index === 0 ? 4 : 6;
+        ctx.fillStyle = index === 0 ? "#43b66b" : "#68d488";
+        roundedRect(x + pad, y + pad, tile - pad * 2, tile - pad * 2, 12);
+        ctx.fill();
+
+        if (index === 0) {
+          drawFace(x, y);
+        }
+      });
+    }
+
+    function drawFace(x, y) {
+      const cx = x + tile / 2;
+      const cy = y + tile / 2;
+      ctx.fillStyle = "#223047";
+      const eyeOffsetX = dir.x !== 0 ? 5 * dir.x : 9;
+      const eyeOffsetY = dir.y !== 0 ? 5 * dir.y : -6;
+      ctx.beginPath();
+      ctx.arc(cx - eyeOffsetX, cy + eyeOffsetY, 3.2, 0, Math.PI * 2);
+      ctx.arc(cx + eyeOffsetX, cy + eyeOffsetY, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#223047";
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.arc(cx, cy + 7, 8, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+    }
+
+    function roundedRect(x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+    }
+
+    function updateUi() {
+      scoreEl.textContent = score;
+      bestEl.textContent = best;
+      renderHearts();
+    }
+
+    function renderHearts() {
+      heartsEl.innerHTML = "";
+      for (let i = 0; i < 3; i += 1) {
+        const heart = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        heart.setAttribute("class", "heart");
+        heart.setAttribute("viewBox", "0 0 24 24");
+        heart.setAttribute("aria-hidden", "true");
+        heart.innerHTML = '<path d="M12 21s-7-4.6-9.4-8.5C.7 9.4 2.2 5.5 5.7 5.1c2-.2 3.5.8 4.3 2.1.8-1.3 2.3-2.3 4.3-2.1 3.5.4 5 4.3 3.1 7.4C19 16.4 12 21 12 21Z" fill="currentColor"/>';
+        heart.style.opacity = i < hearts ? "1" : ".2";
+        heartsEl.appendChild(heart);
+      }
+    }
+
+    function showOverlay(title, text) {
+      overlayTitle.textContent = title;
+      overlayText.textContent = text;
+      overlay.classList.add("show");
+    }
+
+    function hideOverlay() {
+      overlay.classList.remove("show");
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function encouragement() {
+      const words = ["好棒，又一个苹果。", "小蛇长大啦。", "太好了，继续。", "你找到苹果啦。"];
+      return words[score % words.length];
+    }
+
+    function playIcon(label) {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7-11-7Z" fill="currentColor"/></svg>' + label;
+    }
+
+    function pauseIcon(label) {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7V5Zm6 0h4v14h-4V5Z" fill="currentColor"/></svg>' + label;
+    }
+
+    function startIcon(label) {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7-11-7Z" fill="currentColor"/></svg>' + label;
+    }
+
+    document.querySelectorAll(".dir").forEach(button => {
+      button.addEventListener("click", () => setDirection(button.dataset.dir));
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", resetState);
+    document.getElementById("overlayStart").addEventListener("click", startGame);
+    startBtn.addEventListener("click", startGame);
+    pauseBtn.addEventListener("click", togglePause);
+
+    document.addEventListener("keydown", event => {
+      const keyMap = {
+        ArrowUp: "up",
+        ArrowDown: "down",
+        ArrowLeft: "left",
+        ArrowRight: "right",
+        w: "up",
+        s: "down",
+        a: "left",
+        d: "right"
+      };
+      if (keyMap[event.key]) {
+        event.preventDefault();
+        setDirection(keyMap[event.key]);
+      }
+      if (event.key === " ") {
+        event.preventDefault();
+        if (running) togglePause();
+        else startGame();
+      }
+    });
+
+    let touchStart = null;
+    canvas.addEventListener("pointerdown", event => {
+      touchStart = { x: event.clientX, y: event.clientY };
+    });
+    canvas.addEventListener("pointerup", event => {
+      if (!touchStart) return;
+      const dx = event.clientX - touchStart.x;
+      const dy = event.clientY - touchStart.y;
+      touchStart = null;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) {
+        if (!running) startGame();
+        return;
+      }
+      if (Math.abs(dx) > Math.abs(dy)) {
+        setDirection(dx > 0 ? "right" : "left");
+      } else {
+        setDirection(dy > 0 ? "down" : "up");
+      }
+    });
+
+    resetState();
+  </script>
+</body>
+</html>
